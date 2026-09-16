@@ -1,0 +1,10 @@
+{
+  "description": "Showcase your filmmaking talent with a visually stunning portfolio that highlights your work, services, and testimonials in a cinematic, dark-themed design.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
