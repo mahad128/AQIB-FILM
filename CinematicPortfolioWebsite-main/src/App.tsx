@@ -347,6 +347,31 @@ function WorkCard({ work }: { work: Work }) {
   const [hov, setHov] = useState(false)
   const isAmber = work.accent === "amber"
   const isCyan = work.accent === "cyan"
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  const isVideo = work.videoUrl.toLowerCase().includes(".mp4")
+
+  // Force the muted video to begin playback as early as possible. Browsers can
+  // defer autoplay for off-screen or not-yet-buffered videos, so we kick off
+  // play() on mount and retry whenever the element has enough data.
+  useEffect(() => {
+    if (!isVideo) return
+    const el = videoRef.current
+    if (!el) return
+
+    const tryPlay = () => {
+      const p = el.play()
+      if (p && typeof p.catch === "function") p.catch(() => {})
+    }
+
+    tryPlay()
+    el.addEventListener("loadedmetadata", tryPlay)
+    el.addEventListener("canplay", tryPlay)
+    return () => {
+      el.removeEventListener("loadedmetadata", tryPlay)
+      el.removeEventListener("canplay", tryPlay)
+    }
+  }, [isVideo])
 
   function openVideo() {
     window.open(work.videoUrl, "_blank", "noopener,noreferrer")
