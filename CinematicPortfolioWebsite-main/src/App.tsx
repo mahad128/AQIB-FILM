@@ -890,12 +890,32 @@ function Contact() {
   const { ref, visible } = useFadeUp()
   const [form, setForm] = useState({ name: "", email: "", message: "" })
   const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState("")
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
-    setSent(true)
-    setForm({ name: "", email: "", message: "" })
-    setTimeout(() => setSent(false), 4000)
+    if (sending) return
+    setError("")
+    setSending(true)
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Failed to send message.")
+      }
+      setSent(true)
+      setForm({ name: "", email: "", message: "" })
+      setTimeout(() => setSent(false), 4000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.")
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -1038,15 +1058,24 @@ function Contact() {
             />
           </div>
 
+          {error && (
+            <p className="text-red-400/90 text-[11px] tracking-wide">{error}</p>
+          )}
+
           <button
             type="submit"
-            className={`w-full py-4 text-[10px] tracking-[0.38em] uppercase font-bold transition-all duration-300 ${
+            disabled={sending}
+            className={`w-full py-4 text-[10px] tracking-[0.38em] uppercase font-bold transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed ${
               sent
                 ? "bg-green-500/90 text-white"
                 : "bg-[#00b4d8] text-black hover:bg-white"
             }`}
           >
-            {sent ? "Message Sent — Thank You!" : "Send Message"}
+            {sent
+              ? "Message Sent — Thank You!"
+              : sending
+                ? "Sending..."
+                : "Send Message"}
           </button>
         </form>
       </div>
