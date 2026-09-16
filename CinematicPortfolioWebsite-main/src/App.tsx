@@ -886,6 +886,11 @@ const SOCIALS = [
   },
 ]
 
+// ── Web3Forms ─────────────────────────────────────────────────────────────────
+// Paste your Web3Forms access key below (get it free at https://web3forms.com).
+// This key is meant to be public — it is safe to keep in client-side code.
+const WEB3FORMS_ACCESS_KEY = "YOUR_WEB3FORMS_ACCESS_KEY"
+
 function Contact() {
   const { ref, visible } = useFadeUp()
   const [form, setForm] = useState({ name: "", email: "", message: "" })
@@ -899,14 +904,24 @@ function Contact() {
     setError("")
     setSending(true)
     try {
-      const res = await fetch("/api/contact", {
+      const res = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_ACCESS_KEY,
+          subject: "New message from your portfolio site",
+          from_name: "Aqib Hayat Portfolio",
+          name: form.name,
+          email: form.email,
+          message: form.message,
+        }),
       })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || "Failed to send message.")
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to send message.")
       }
       setSent(true)
       setForm({ name: "", email: "", message: "" })
