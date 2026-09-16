@@ -889,7 +889,7 @@ const SOCIALS = [
 // ── Web3Forms ─────────────────────────────────────────────────────────────────
 // Paste your Web3Forms access key below (get it free at https://web3forms.com).
 // This key is meant to be public — it is safe to keep in client-side code.
-const WEB3FORMS_ACCESS_KEY = "YOUR_WEB3FORMS_ACCESS_KEY"
+  const WEB3FORMS_ACCESS_KEY = "b3246a99-16af-40ac-8a5e-a9c5755b4e4a"
 
 function Contact() {
   const { ref, visible } = useFadeUp()
