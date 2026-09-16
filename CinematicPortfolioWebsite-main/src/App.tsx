@@ -270,6 +270,22 @@ function ytThumb(videoId: string) {
   return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
 }
 
+// Insert Cloudinary delivery transformations so previews stream a small,
+// auto-compressed version instead of the full-resolution source file.
+function optimizeCloudinaryVideo(url: string, width = 640) {
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
+    return url
+  }
+  return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width}/`)
+}
+
+function optimizeCloudinaryImage(url: string, width = 720) {
+  if (!url.includes("res.cloudinary.com") || !url.includes("/upload/")) {
+    return url
+  }
+  return url.replace("/upload/", `/upload/f_auto,q_auto,w_${width}/`)
+}
+
 interface Work {
   id: number
   src: string
@@ -345,8 +361,29 @@ const WORKS: Work[] = [
 
 function WorkCard({ work }: { work: Work }) {
   const [hov, setHov] = useState(false)
+  const [inView, setInView] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
   const isAmber = work.accent === "amber"
   const isCyan = work.accent === "cyan"
+  const isVideo = work.videoUrl.toLowerCase().includes(".mp4")
+
+  // Only start downloading the video once the card is near the viewport,
+  // so all six previews don't fetch at once on page load.
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setInView(true)
+          obs.disconnect()
+        }
+      },
+      { rootMargin: "300px" },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   function openVideo() {
     window.open(work.videoUrl, "_blank", "noopener,noreferrer")
@@ -354,6 +391,7 @@ function WorkCard({ work }: { work: Work }) {
 
   return (
     <div
+      ref={cardRef}
       className="relative overflow-hidden cursor-pointer bg-[#0a1628]"
       style={{
         gridRow: work.size === "tall" ? "span 2" : undefined,
@@ -364,21 +402,29 @@ function WorkCard({ work }: { work: Work }) {
       onMouseLeave={() => setHov(false)}
       onClick={openVideo}
     >
-      {work.videoUrl.toLowerCase().includes(".mp4") ? (
-        <video
-          src={work.videoUrl}
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster={work.src}
-          style={{
-            transform: hov ? "scale(1.07)" : "scale(1)",
-            transition: "transform 0.75s cubic-bezier(0.25,0.46,0.45,0.94)",
-          }}
-        />
+      {isVideo ? (
+        inView ? (
+          <video
+            src={optimizeCloudinaryVideo(work.videoUrl)}
+            className="w-full h-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster={work.src}
+            style={{
+              transform: hov ? "scale(1.07)" : "scale(1)",
+              transition: "transform 0.75s cubic-bezier(0.25,0.46,0.45,0.94)",
+            }}
+          />
+        ) : (
+          <img
+            src={work.src}
+            alt={work.title}
+            className="w-full h-full object-cover"
+          />
+        )
       ) : (
         <img
           src={work.src}
@@ -518,9 +564,13 @@ function About() {
         <div className="relative">
           <div className="relative aspect-[3/4] max-w-[360px] mx-auto md:mx-0 overflow-hidden bg-[#0a1628]">
             <img
-              src="https://res.cloudinary.com/qihhar33/image/upload/v1789486084/aqib_dp.jpg"
+              src={optimizeCloudinaryImage(
+                "https://res.cloudinary.com/qihhar33/image/upload/v1789486084/aqib_dp.jpg",
+              )}
               alt="Aqib Hayat — Filmmaker"
               className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
               style={{
                 filter: "grayscale(80%) contrast(1.18) brightness(0.82)",
               }}
